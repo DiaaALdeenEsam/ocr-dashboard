@@ -9,9 +9,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
-  Menu,
-  MenuItem,
   Paper,
   Snackbar,
   Table,
@@ -25,17 +22,16 @@ import {
 import {
   CloudQueue as StorageIcon,
   DataObject as JsonIcon,
-  Delete as DeleteIcon,
   Description as WordIcon,
   Download as DownloadIcon,
   FolderZip as GeneratedIcon,
   Image as ImageIcon,
-  MoreVert as MoreIcon,
   PictureAsPdf as PdfIcon,
   TableChart as ExcelIcon,
-  Visibility as PreviewIcon,
 } from '@mui/icons-material';
 import { formatFileSize } from '../utils/format';
+
+const WORD_BLUE = '#2B579A';
 
 const FORMAT = {
   PDF: 'PDF',
@@ -112,10 +108,10 @@ const INITIAL_FILES = [
 ];
 
 const FORMAT_META = {
-  [FORMAT.PDF]: { color: 'error', icon: PdfIcon },
-  [FORMAT.JSON]: { color: 'secondary', icon: JsonIcon },
-  [FORMAT.WORD]: { color: 'primary', icon: WordIcon },
-  [FORMAT.EXCEL]: { color: 'success', icon: ExcelIcon },
+  [FORMAT.PDF]: { color: 'error', icon: PdfIcon, bar: '#C62828' },
+  [FORMAT.JSON]: { color: 'secondary', icon: JsonIcon, bar: '#D4AF37' },
+  [FORMAT.WORD]: { color: 'info', icon: WordIcon, bar: WORD_BLUE, iconColor: WORD_BLUE },
+  [FORMAT.EXCEL]: { color: 'success', icon: ExcelIcon, bar: '#2E7D32' },
 };
 
 function formatDate(value) {
@@ -130,19 +126,28 @@ function formatDate(value) {
 }
 
 function FormatIcon({ format, fontSize = 'small' }) {
-  const Icon = FORMAT_META[format]?.icon || WordIcon;
-  const color = FORMAT_META[format]?.color || 'action';
-  return <Icon fontSize={fontSize} color={color} />;
+  const meta = FORMAT_META[format];
+  const Icon = meta?.icon || WordIcon;
+  if (meta?.iconColor) {
+    return <Icon fontSize={fontSize} sx={{ color: meta.iconColor }} />;
+  }
+  return <Icon fontSize={fontSize} color={meta?.color || 'action'} />;
 }
 
 function FormatBadge({ format }) {
+  const meta = FORMAT_META[format];
   return (
     <Chip
       size="small"
       label={format}
-      color={FORMAT_META[format]?.color || 'default'}
+      color={format === FORMAT.WORD ? undefined : meta?.color || 'default'}
       variant="outlined"
       icon={<FormatIcon format={format} />}
+      sx={
+        format === FORMAT.WORD
+          ? { color: WORD_BLUE, borderColor: WORD_BLUE, '& .MuiChip-icon': { color: WORD_BLUE } }
+          : undefined
+      }
     />
   );
 }
@@ -188,55 +193,12 @@ function SourceThumbnail({ src, alt }) {
   );
 }
 
-function FileActions({ file, onPreview, onDownload, onDelete }) {
-  const [anchorEl, setAnchorEl] = useState(null);
-
-  return (
-    <>
-      <IconButton
-        size="small"
-        aria-label={`Actions for ${file.fileName}`}
-        onClick={(event) => setAnchorEl(event.currentTarget)}
-      >
-        <MoreIcon />
-      </IconButton>
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-        <MenuItem
-          onClick={() => {
-            setAnchorEl(null);
-            onDownload(file);
-          }}
-        >
-          <DownloadIcon fontSize="small" sx={{ mr: 1 }} /> Download
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            setAnchorEl(null);
-            onPreview(file);
-          }}
-        >
-          <PreviewIcon fontSize="small" sx={{ mr: 1 }} /> Preview
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            setAnchorEl(null);
-            onDelete(file);
-          }}
-          sx={{ color: 'error.main' }}
-        >
-          <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Delete
-        </MenuItem>
-      </Menu>
-    </>
-  );
-}
-
 function PreviewDialog({ file, onClose, onDownload }) {
   const open = Boolean(file);
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Preview</DialogTitle>
+      <DialogTitle>File details</DialogTitle>
       <DialogContent>
         {file && (
           <Box>
@@ -283,10 +245,135 @@ function PreviewDialog({ file, onClose, onDownload }) {
   );
 }
 
+function StorageOverview({ files, totalStorage }) {
+  const breakdown = useMemo(() => {
+    const totals = {
+      [FORMAT.PDF]: 0,
+      [FORMAT.EXCEL]: 0,
+      [FORMAT.WORD]: 0,
+      [FORMAT.JSON]: 0,
+    };
+    files.forEach((file) => {
+      totals[file.format] = (totals[file.format] || 0) + (file.size || 0);
+    });
+    return Object.entries(totals)
+      .map(([format, size]) => ({
+        format,
+        size,
+        pct: totalStorage ? (size / totalStorage) * 100 : 0,
+      }))
+      .sort((a, b) => b.size - a.size);
+  }, [files, totalStorage]);
+
+  const heaviest = breakdown[0];
+
+  return (
+    <Card sx={{ mb: 3 }}>
+      <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: { xs: 'flex-start', sm: 'center' },
+            gap: 2,
+            mb: 3,
+          }}
+        >
+          <Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              Total Used Storage
+            </Typography>
+            <Typography
+              fontWeight={800}
+              sx={{ fontSize: { xs: '2.4rem', sm: '3.2rem' }, lineHeight: 1.1, letterSpacing: '-0.03em' }}
+            >
+              {formatFileSize(totalStorage)}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {files.length} generated file{files.length === 1 ? '' : 's'}
+              {heaviest?.size > 0 ? ` · ${heaviest.format} takes the most space` : ''}
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+            }}
+          >
+            <StorageIcon sx={{ fontSize: 36 }} />
+          </Box>
+        </Box>
+
+        <Box
+          sx={{
+            display: 'flex',
+            height: 18,
+            borderRadius: 999,
+            overflow: 'hidden',
+            bgcolor: 'action.hover',
+            mb: 2.5,
+          }}
+        >
+          {breakdown
+            .filter((item) => item.pct > 0)
+            .map((item) => (
+              <Box
+                key={item.format}
+                title={`${item.format}: ${formatFileSize(item.size)}`}
+                sx={{
+                  width: `${item.pct}%`,
+                  bgcolor: FORMAT_META[item.format]?.bar,
+                  minWidth: item.pct > 0 ? 6 : 0,
+                  transition: 'width 0.3s ease',
+                }}
+              />
+            ))}
+        </Box>
+
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' },
+            gap: 1.5,
+          }}
+        >
+          {breakdown.map((item) => (
+            <Box
+              key={item.format}
+              sx={{
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: 'action.hover',
+                borderLeft: '3px solid',
+                borderColor: FORMAT_META[item.format]?.bar,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.5 }}>
+                <FormatIcon format={item.format} />
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  {item.format}
+                </Typography>
+              </Box>
+              <Typography variant="subtitle1" fontWeight={700}>
+                {formatFileSize(item.size)}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {item.pct.toFixed(0)}% of storage
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function GeneratedFiles() {
-  const [files, setFiles] = useState(INITIAL_FILES);
   const [previewFile, setPreviewFile] = useState(null);
   const [toast, setToast] = useState('');
+  const files = INITIAL_FILES;
 
   const totalStorage = useMemo(
     () => files.reduce((sum, file) => sum + (file.size || 0), 0),
@@ -304,12 +391,6 @@ export default function GeneratedFiles() {
     setToast(`Downloading ${file.fileName}`);
   };
 
-  const handleDelete = (file) => {
-    setFiles((current) => current.filter((item) => item.id !== file.id));
-    if (previewFile?.id === file.id) setPreviewFile(null);
-    setToast(`${file.fileName} removed from this list`);
-  };
-
   return (
     <Box>
       <Box sx={{ mb: 3 }}>
@@ -321,33 +402,7 @@ export default function GeneratedFiles() {
         </Typography>
       </Box>
 
-      <Card sx={{ mb: 3, maxWidth: { md: 420 } }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Box>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                Total Used Storage
-              </Typography>
-              <Typography variant="h4" fontWeight={700}>
-                {formatFileSize(totalStorage)}
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1, color: 'primary.main', fontWeight: 600 }}>
-                Across {files.length} generated file{files.length === 1 ? '' : 's'}
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                p: 1.5,
-                borderRadius: 2,
-                bgcolor: 'primary.main',
-                color: 'primary.contrastText',
-              }}
-            >
-              <StorageIcon />
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
+      <StorageOverview files={files} totalStorage={totalStorage} />
 
       {files.length === 0 ? (
         <Paper sx={{ p: 6, textAlign: 'center' }}>
@@ -369,7 +424,7 @@ export default function GeneratedFiles() {
                 <TableCell>File Size</TableCell>
                 <TableCell>Format</TableCell>
                 <TableCell>Created Date</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell align="right">View</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -413,12 +468,9 @@ export default function GeneratedFiles() {
                   </TableCell>
                   <TableCell>{formatDate(file.createdAt)}</TableCell>
                   <TableCell align="right">
-                    <FileActions
-                      file={file}
-                      onPreview={setPreviewFile}
-                      onDownload={handleDownload}
-                      onDelete={handleDelete}
-                    />
+                    <Button size="small" variant="contained" color="primary" onClick={() => setPreviewFile(file)}>
+                      View
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
