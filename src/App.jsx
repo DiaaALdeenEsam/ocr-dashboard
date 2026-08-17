@@ -7,6 +7,7 @@ import Users from './pages/Users';
 import UserDetail from './pages/UserDetail';
 import Documents from './pages/Documents';
 import UploadedFiles from './pages/UploadedFiles';
+import GeneratedFiles from './pages/GeneratedFiles';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
@@ -48,6 +49,7 @@ function App() {
               <Route path="users/:id" element={<AdminRoute><UserDetailRoute /></AdminRoute>} />
               <Route path="documents" element={<Documents />} />
               <Route path="uploaded-files" element={<AdminRoute><UploadedFiles /></AdminRoute>} />
+              <Route path="generated-files" element={<GeneratedFiles />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

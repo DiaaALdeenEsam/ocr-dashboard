@@ -23,6 +23,7 @@ import {
   Brightness7,
   CloudUpload as UploadedFilesIcon,
   Description as DocumentsIcon,
+  FolderZip as GeneratedFilesIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
   People as PeopleIcon,
@@ -37,6 +38,7 @@ const navItems = [
   { label: 'Users Management', path: '/dashboard/users', icon: <PeopleIcon /> },
   { label: 'Documents Management', path: '/dashboard/documents', icon: <DocumentsIcon /> },
   { label: 'Uploaded Files', path: '/dashboard/uploaded-files', icon: <UploadedFilesIcon /> },
+  { label: 'Generated Files', path: '/dashboard/generated-files', icon: <GeneratedFilesIcon /> },
 ];
 
 function NavItem({ item, onNavigate }) {
