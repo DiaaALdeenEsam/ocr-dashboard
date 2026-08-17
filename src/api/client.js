@@ -135,16 +135,24 @@ export async function apiFetch(path, options = {}) {
   return response;
 }
 
-export async function fetchProfile() {
-  const response = await apiFetch('/api/user/profile/');
-  if (!response.ok) throw await toApiError(response);
-  return response.json();
+export function resolveMediaUrl(path) {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  const base = API_BASE_URL.replace(/\/$/, '');
+  const relative = path.startsWith('/') ? path : `/${path}`;
+  return `${base}${relative}`;
 }
 
-export async function fetchUserFiles() {
-  const response = await apiFetch('/api/user/files/');
+export async function getUploadedFiles() {
+  let response;
+  try {
+    response = await apiFetch('/api/uploaded-files/');
+  } catch {
+    throw new ApiError(0, { detail: 'Unable to reach the server. Please try again.' });
+  }
   if (!response.ok) throw await toApiError(response);
-  return response.json();
+  const data = await response.json();
+  return Array.isArray(data) ? data : [];
 }
 
 export async function getAdminUsers() {

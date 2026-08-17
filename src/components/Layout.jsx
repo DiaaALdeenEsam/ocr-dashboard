@@ -21,11 +21,11 @@ import {
   Analytics as AnalyticsIcon,
   Brightness4,
   Brightness7,
+  CloudUpload as UploadedFilesIcon,
   Description as DocumentsIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
   People as PeopleIcon,
-  Person as PersonIcon,
 } from '@mui/icons-material';
 import { useThemeMode } from '../context/ThemeModeContext';
 import { useAuth } from '../context/AuthContext';
@@ -36,7 +36,7 @@ const navItems = [
   { label: 'Analytics / Overview', path: '/dashboard', icon: <AnalyticsIcon /> },
   { label: 'Users Management', path: '/dashboard/users', icon: <PeopleIcon /> },
   { label: 'Documents Management', path: '/dashboard/documents', icon: <DocumentsIcon /> },
-  { label: 'Profile', path: '/dashboard/profile', icon: <PersonIcon /> },
+  { label: 'Uploaded Files', path: '/dashboard/uploaded-files', icon: <UploadedFilesIcon /> },
 ];
 
 function NavItem({ item, onNavigate }) {

@@ -6,7 +6,7 @@ import Analytics from './pages/Analytics';
 import Users from './pages/Users';
 import UserDetail from './pages/UserDetail';
 import Documents from './pages/Documents';
-import Profile from './pages/Profile';
+import UploadedFiles from './pages/UploadedFiles';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
@@ -47,7 +47,7 @@ function App() {
               <Route path="users" element={<AdminRoute><Users /></AdminRoute>} />
               <Route path="users/:id" element={<AdminRoute><UserDetailRoute /></AdminRoute>} />
               <Route path="documents" element={<Documents />} />
-              <Route path="profile" element={<Profile />} />
+              <Route path="uploaded-files" element={<AdminRoute><UploadedFiles /></AdminRoute>} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
