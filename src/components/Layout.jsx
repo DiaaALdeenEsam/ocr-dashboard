@@ -22,7 +22,6 @@ import {
   Brightness4,
   Brightness7,
   CloudUpload as UploadedFilesIcon,
-  Description as DocumentsIcon,
   FolderZip as GeneratedFilesIcon,
   Logout as LogoutIcon,
   Menu as MenuIcon,
@@ -36,7 +35,6 @@ const DRAWER_WIDTH = 260;
 const navItems = [
   { label: 'Analytics / Overview', path: '/dashboard', icon: <AnalyticsIcon /> },
   { label: 'Users Management', path: '/dashboard/users', icon: <PeopleIcon /> },
-  { label: 'Documents Management', path: '/dashboard/documents', icon: <DocumentsIcon /> },
   { label: 'Uploaded Files', path: '/dashboard/uploaded-files', icon: <UploadedFilesIcon /> },
   { label: 'Generated Files', path: '/dashboard/generated-files', icon: <GeneratedFilesIcon /> },
 ];

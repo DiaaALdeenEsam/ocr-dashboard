@@ -256,6 +256,47 @@ function FileDetailsDialog({ open, loading, error, file, downloading, onClose, o
   );
 }
 
+const FORMAT_TYPES = [FORMAT.PDF, FORMAT.JSON, FORMAT.WORD, FORMAT.EXCEL];
+
+function normalizeStorageStats(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const data = raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) ? raw.data : raw;
+  const rows = data.by_file_type || data.byFileType || [];
+  const totalBytes = Number(data.total_bytes ?? data.totalBytes ?? 0);
+  const totalFiles = Number(data.total_files ?? data.totalFiles ?? 0);
+  return {
+    total_bytes: Number.isNaN(totalBytes) ? 0 : totalBytes,
+    total_files: Number.isNaN(totalFiles) ? 0 : totalFiles,
+    by_file_type: Array.isArray(rows)
+      ? rows.map((row) => ({
+          file_type: row.file_type || row.fileType,
+          count: Number(row.count ?? 0),
+          bytes: Number(row.bytes ?? row.file_size_bytes ?? 0),
+        }))
+      : [],
+  };
+}
+
+function statsFromFiles(files) {
+  const buckets = Object.fromEntries(
+    FORMAT_TYPES.map((type) => [type, { file_type: type, count: 0, bytes: 0 }]),
+  );
+  files.forEach((file) => {
+    const type = String(file.file_type || '').toUpperCase();
+    if (!buckets[type]) {
+      buckets[type] = { file_type: type, count: 0, bytes: 0 };
+    }
+    buckets[type].count += 1;
+    buckets[type].bytes += Number(file.file_size_bytes || 0);
+  });
+  const by_file_type = FORMAT_TYPES.map((type) => buckets[type]);
+  return {
+    total_files: files.length,
+    total_bytes: by_file_type.reduce((sum, row) => sum + row.bytes, 0),
+    by_file_type,
+  };
+}
+
 function StorageOverview({ stats, loading, error, onRetry }) {
   const totalBytes = stats?.total_bytes ?? 0;
   const breakdown = useMemo(() => {
@@ -442,7 +483,7 @@ export default function GeneratedFiles() {
     setStatsError('');
     try {
       const data = await getGeneratedFileStorageStats();
-      setStats(data);
+      setStats(normalizeStorageStats(data));
     } catch (err) {
       setStatsError(errorMessageFor(err, 'Unable to load storage statistics.'));
     } finally {
@@ -493,6 +534,13 @@ export default function GeneratedFiles() {
     loadStats();
   };
 
+  const displayStats = useMemo(() => {
+    const apiHasTotals = Boolean(stats && (stats.total_files > 0 || stats.total_bytes > 0));
+    if (apiHasTotals) return stats;
+    if (files.length > 0) return statsFromFiles(files);
+    return stats;
+  }, [stats, files]);
+
   return (
     <Box>
       <Box
@@ -519,9 +567,9 @@ export default function GeneratedFiles() {
       </Box>
 
       <StorageOverview
-        stats={stats}
-        loading={statsLoading}
-        error={statsError}
+        stats={displayStats}
+        loading={statsLoading && files.length === 0}
+        error={statsError && files.length === 0 ? statsError : ''}
         onRetry={loadStats}
       />
 

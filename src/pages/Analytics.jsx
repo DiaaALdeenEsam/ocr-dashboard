@@ -21,15 +21,6 @@ import { formatFileSize } from '../utils/format';
 const activityData = [40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88];
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const performanceData = [
-  { month: 'Jan', uptime: 99.2, response: 120 },
-  { month: 'Feb', uptime: 99.5, response: 115 },
-  { month: 'Mar', uptime: 99.8, response: 108 },
-  { month: 'Apr', uptime: 99.6, response: 112 },
-  { month: 'May', uptime: 99.9, response: 105 },
-  { month: 'Jun', uptime: 99.7, response: 110 },
-];
-
 function KpiCard({ title, value, change, icon, accent }) {
   const theme = useTheme();
   const isSecondary = accent === 'secondary';
@@ -147,45 +138,6 @@ function DonutChart({ segments, centerLabel }) {
           </Box>
         ))}
       </Box>
-    </Box>
-  );
-}
-
-function BarChart({ data }) {
-  const maxUptime = 100;
-  const maxResponse = Math.max(...data.map((d) => d.response));
-
-  return (
-    <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end', height: 180, pt: 2 }}>
-      {data.map((item) => (
-        <Box key={item.month} sx={{ flex: 1, textAlign: 'center' }}>
-          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', alignItems: 'flex-end', height: 140 }}>
-            <Box
-              sx={{
-                width: '40%',
-                height: `${(item.uptime / maxUptime) * 100}%`,
-                bgcolor: 'primary.main',
-                borderRadius: '4px 4px 0 0',
-                minHeight: 4,
-              }}
-              title={`Uptime: ${item.uptime}%`}
-            />
-            <Box
-              sx={{
-                width: '40%',
-                height: `${(item.response / maxResponse) * 100}%`,
-                bgcolor: 'secondary.main',
-                borderRadius: '4px 4px 0 0',
-                minHeight: 4,
-              }}
-              title={`Response: ${item.response}ms`}
-            />
-          </Box>
-          <Typography variant="caption" color="text.secondary">
-            {item.month}
-          </Typography>
-        </Box>
-      ))}
     </Box>
   );
 }
@@ -314,34 +266,6 @@ export default function Analytics() {
                   </Typography>
                 ))}
               </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12 }}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 1 }}>
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Monthly System Performance
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Uptime (green) vs Response Time (gold)
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Box sx={{ width: 12, height: 12, bgcolor: 'primary.main', borderRadius: 0.5 }} />
-                    <Typography variant="caption">Uptime %</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Box sx={{ width: 12, height: 12, bgcolor: 'secondary.main', borderRadius: 0.5 }} />
-                    <Typography variant="caption">Response ms</Typography>
-                  </Box>
-                </Box>
-              </Box>
-              <BarChart data={performanceData} />
             </CardContent>
           </Card>
         </Grid>
