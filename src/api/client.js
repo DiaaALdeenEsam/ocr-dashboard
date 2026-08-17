@@ -4,10 +4,23 @@ const TOKENS_STORAGE_KEY = 'dashboard-auth-tokens';
 
 const REFRESH_PATH = '/api/auth/refresh/';
 
+function messageFromApiData(data = {}) {
+  if (typeof data?.error?.message === 'string' && data.error.message.trim()) {
+    return data.error.message;
+  }
+  if (typeof data?.detail?.error?.message === 'string' && data.detail.error.message.trim()) {
+    return data.detail.error.message;
+  }
+  if (typeof data?.detail === 'string' && data.detail.trim()) {
+    return data.detail;
+  }
+  if (data?.non_field_errors?.[0]) return data.non_field_errors[0];
+  return '';
+}
+
 export class ApiError extends Error {
   constructor(status, data = {}) {
-    const detail = data?.detail || (data?.non_field_errors && data.non_field_errors[0]);
-    super(detail || 'Request failed');
+    super(messageFromApiData(data) || 'Request failed');
     this.name = 'ApiError';
     this.status = status;
     this.data = data;
@@ -137,10 +150,102 @@ export async function apiFetch(path, options = {}) {
 
 export function resolveMediaUrl(path) {
   if (!path) return '';
+  if (/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/i.test(path)) {
+    try {
+      const parsed = new URL(path);
+      return `${parsed.pathname}${parsed.search}`;
+    } catch {
+      return path;
+    }
+  }
   if (/^https?:\/\//i.test(path)) return path;
   const base = API_BASE_URL.replace(/\/$/, '');
   const relative = path.startsWith('/') ? path : `/${path}`;
   return `${base}${relative}`;
+}
+
+function filenameFromDisposition(header, fallback = 'download') {
+  if (!header) return fallback;
+  const utfMatch = header.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utfMatch?.[1]) {
+    try {
+      return decodeURIComponent(utfMatch[1]);
+    } catch {
+      return utfMatch[1];
+    }
+  }
+  const plainMatch = header.match(/filename="?([^";]+)"?/i);
+  return plainMatch?.[1] || fallback;
+}
+
+async function requestJson(path) {
+  let response;
+  try {
+    response = await apiFetch(path);
+  } catch {
+    throw new ApiError(0, { detail: 'Unable to reach the server. Please try again.' });
+  }
+  if (!response.ok) throw await toApiError(response);
+  return response.json();
+}
+
+export async function getGeneratedFiles({ page = 1, pageSize = 20 } = {}) {
+  const params = new URLSearchParams({
+    page: String(page),
+    page_size: String(pageSize),
+  });
+  const data = await requestJson(`/api/v1/generated-files/?${params}`);
+  if (Array.isArray(data)) {
+    return {
+      results: data,
+      count: data.length,
+      page: 1,
+      page_size: data.length || pageSize,
+      next: null,
+      previous: null,
+    };
+  }
+  return {
+    results: Array.isArray(data?.results) ? data.results : [],
+    count: data?.count ?? 0,
+    page: data?.page ?? page,
+    page_size: data?.page_size ?? pageSize,
+    next: data?.next ?? null,
+    previous: data?.previous ?? null,
+  };
+}
+
+export async function getGeneratedFile(id) {
+  return requestJson(`/api/v1/generated-files/${id}/`);
+}
+
+export async function getGeneratedFileStorageStats() {
+  return requestJson('/api/v1/generated-files/storage-stats/');
+}
+
+export async function downloadGeneratedFile(id, fallbackName = 'download') {
+  let response;
+  try {
+    response = await apiFetch(`/api/v1/generated-files/${id}/download/`);
+  } catch {
+    throw new ApiError(0, { detail: 'Unable to reach the server. Please try again.' });
+  }
+  if (!response.ok) throw await toApiError(response);
+
+  const blob = await response.blob();
+  const filename = filenameFromDisposition(
+    response.headers.get('Content-Disposition'),
+    fallbackName,
+  );
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  return filename;
 }
 
 export async function getUploadedFiles() {
