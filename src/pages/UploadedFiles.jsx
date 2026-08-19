@@ -3,13 +3,13 @@ import {
   Alert,
   Box,
   Button,
+  CardContent,
   Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -17,6 +17,7 @@ import {
   TableHead,
   TableRow,
   Typography,
+  useTheme,
 } from '@mui/material';
 import {
   CloudUpload as CloudUploadIcon,
@@ -26,6 +27,15 @@ import {
 import { ApiError, getUploadedFiles, resolveMediaUrl } from '../api/client';
 import { formatFileSize } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
+import {
+  AccessDeniedPanel,
+  EmptyPanel,
+  GlassPanel,
+  glowTableSx,
+  HeroChip,
+  LoadingPanel,
+  PageHero,
+} from '../components/visual';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -151,6 +161,7 @@ function FileDetailsDialog({ file, onClose }) {
 
 export default function UploadedFiles() {
   const { logout } = useAuth();
+  const theme = useTheme();
   const [files, setFiles] = useState(null);
   const [error, setError] = useState('');
   const [accessDenied, setAccessDenied] = useState(false);
@@ -192,110 +203,98 @@ export default function UploadedFiles() {
   }, []);
 
   if (accessDenied) {
-    return (
-      <Box sx={{ textAlign: 'center', py: 8 }}>
-        <Typography variant="h5" fontWeight={700} gutterBottom>
-          Access Denied
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Your account is not authorized to view this page.
-        </Typography>
-        <Button variant="contained" color="primary" onClick={logout}>
-          Back to Login
-        </Button>
-      </Box>
-    );
+    return <AccessDeniedPanel onLogout={logout} />;
   }
 
   return (
     <Box>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" fontWeight={700} gutterBottom>
-          Uploaded Files
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          View files uploaded through the application.
-        </Typography>
-      </Box>
+      <PageHero
+        eyebrow="Inbox"
+        title="Source captures"
+        subtitle="Original images that entered the OCR pipeline — inspect metadata without leaving the vault."
+        action={
+          <HeroChip icon={<CloudUploadIcon sx={{ color: 'secondary.main', fontSize: 18 }} />}>
+            {files?.length ?? 0} files in archive
+          </HeroChip>
+        }
+      />
 
       {error && (
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Alert
-            severity="error"
-            action={
-              <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={load}>
-                Retry
-              </Button>
-            }
-          >
-            {error}
-          </Alert>
-        </Paper>
+        <Alert
+          severity="error"
+          sx={{ mb: 3 }}
+          action={
+            <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={load}>
+              Retry
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
       )}
 
-      {files === null && !error && (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress color="secondary" />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Loading uploaded files...
-          </Typography>
-        </Paper>
-      )}
+      {files === null && !error && <LoadingPanel label="Pulling uploaded captures..." />}
 
       {files !== null && files.length === 0 && !error && (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <CloudUploadIcon sx={{ fontSize: 48, color: 'action.disabled', mb: 1 }} />
-          <Typography variant="h6" gutterBottom>
-            No uploaded files found.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Files uploaded to the system will appear here.
-          </Typography>
-        </Paper>
+        <EmptyPanel
+          icon={<CloudUploadIcon sx={{ fontSize: 48 }} />}
+          title="No uploaded files found."
+          subtitle="Files uploaded to the system will appear here."
+        />
       )}
 
       {files !== null && files.length > 0 && (
-        <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Preview</TableCell>
-                <TableCell>File Name</TableCell>
-                <TableCell>Size</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Uploaded</TableCell>
-                <TableCell align="right">Details</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {files.map((file) => (
-                <TableRow key={file.id} hover>
-                  <TableCell>
-                    <FileThumbnail
-                      src={resolveMediaUrl(file.image)}
-                      alt={file.file_name || `File ${file.id}`}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={600} noWrap title={file.file_name}>
-                      {file.file_name || '—'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{formatFileSize(file.file_size)}</TableCell>
-                  <TableCell>
-                    <Chip label={fileTypeOf(file)} size="small" variant="outlined" />
-                  </TableCell>
-                  <TableCell>{formatDate(file.uploaded_at)}</TableCell>
-                  <TableCell align="right">
-                    <Button size="small" onClick={() => setSelected(file)}>
-                      View
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <GlassPanel>
+          <CardContent>
+            <Typography variant="overline" sx={{ color: 'secondary.main', letterSpacing: '0.16em', fontWeight: 700 }}>
+              Vault
+            </Typography>
+            <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>
+              Uploaded images
+            </Typography>
+            <TableContainer sx={{ overflowX: 'auto' }}>
+              <Table sx={glowTableSx(theme)}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Preview</TableCell>
+                    <TableCell>File Name</TableCell>
+                    <TableCell>Size</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Uploaded</TableCell>
+                    <TableCell align="right">Details</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {files.map((file) => (
+                    <TableRow key={file.id} hover>
+                      <TableCell>
+                        <FileThumbnail
+                          src={resolveMediaUrl(file.image)}
+                          alt={file.file_name || `File ${file.id}`}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600} noWrap title={file.file_name}>
+                          {file.file_name || '—'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{formatFileSize(file.file_size)}</TableCell>
+                      <TableCell>
+                        <Chip label={fileTypeOf(file)} size="small" variant="outlined" color="secondary" />
+                      </TableCell>
+                      <TableCell>{formatDate(file.uploaded_at)}</TableCell>
+                      <TableCell align="right">
+                        <Button size="small" variant="contained" color="primary" onClick={() => setSelected(file)}>
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </CardContent>
+        </GlassPanel>
       )}
 
       <FileDetailsDialog file={selected} onClose={() => setSelected(null)} />

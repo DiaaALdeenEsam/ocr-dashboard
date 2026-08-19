@@ -20,6 +20,7 @@ import {
 import { colors } from '../theme';
 import { fetchMetrics } from '../api/client';
 import { formatFileSize } from '../utils/format';
+import { glassCard, KpiTile, PageHero, HeroChip } from '../components/visual';
 
 const activityData = [40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88];
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -31,71 +32,6 @@ function formatCount(value) {
 function percentOf(part, total) {
   if (!total) return 0;
   return Math.round((Number(part || 0) / Number(total)) * 100);
-}
-
-function glassCard(theme, extra = {}) {
-  const dark = theme.palette.mode === 'dark';
-  return {
-    height: '100%',
-    position: 'relative',
-    overflow: 'hidden',
-    border: `1px solid ${dark ? 'rgba(212, 175, 55, 0.12)' : 'rgba(30, 86, 49, 0.12)'}`,
-    background: dark
-      ? 'linear-gradient(165deg, rgba(30,86,49,0.22) 0%, rgba(30,30,30,0.96) 42%, rgba(18,18,18,1) 100%)'
-      : 'linear-gradient(165deg, rgba(30,86,49,0.08) 0%, #ffffff 45%)',
-    ...extra,
-  };
-}
-
-function KpiTile({ title, value, hint, icon, accent }) {
-  const theme = useTheme();
-  const gold = accent === 'gold';
-  const tone = gold ? theme.palette.secondary.main : theme.palette.primary.light;
-
-  return (
-    <Card sx={glassCard(theme)}>
-      <Box
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          background: gold
-            ? 'radial-gradient(circle at 100% 0%, rgba(212,175,55,0.16), transparent 46%)'
-            : 'radial-gradient(circle at 0% 0%, rgba(46,122,69,0.22), transparent 46%)',
-          pointerEvents: 'none',
-        }}
-      />
-      <CardContent sx={{ position: 'relative' }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-          <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
-            {title}
-          </Typography>
-          <Box
-            sx={{
-              width: 38,
-              height: 38,
-              borderRadius: '50%',
-              display: 'grid',
-              placeItems: 'center',
-              color: gold ? '#121212' : '#fff',
-              bgcolor: tone,
-              boxShadow: `0 0 18px ${tone}66`,
-            }}
-          >
-            {icon}
-          </Box>
-        </Box>
-        <Typography
-          fontWeight={800}
-          sx={{ fontSize: { xs: '1.8rem', md: '2.15rem' }, lineHeight: 1, letterSpacing: '-0.04em' }}
-        >
-          {value}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          {hint}
-        </Typography>
-      </CardContent>
-    </Card>
-  );
 }
 
 function StatusRing({ segments, centerLabel, successRate }) {
@@ -319,57 +255,16 @@ export default function Analytics() {
 
   return (
     <Box sx={{ position: 'relative' }}>
-      <Box
-        sx={{
-          pointerEvents: 'none',
-          position: 'absolute',
-          inset: '-24px -8px auto',
-          height: 220,
-          background:
-            theme.palette.mode === 'dark'
-              ? 'radial-gradient(ellipse at left top, rgba(30,86,49,0.28), transparent 55%)'
-              : 'radial-gradient(ellipse at left top, rgba(30,86,49,0.12), transparent 55%)',
-        }}
+      <PageHero
+        eyebrow="Live operations"
+        title="OCR command deck"
+        subtitle="A real-time snapshot of extraction throughput, storage pressure, and pipeline health."
+        action={
+          <HeroChip icon={<SparkIcon sx={{ color: 'secondary.main', fontSize: 18 }} />}>
+            {successRate}% extraction success
+          </HeroChip>
+        }
       />
-
-      <Box
-        sx={{
-          position: 'relative',
-          mb: 3,
-          p: { xs: 2.5, md: 3 },
-          borderRadius: 3,
-          overflow: 'hidden',
-          border: '1px solid',
-          borderColor: 'divider',
-          background:
-            theme.palette.mode === 'dark'
-              ? 'linear-gradient(120deg, #0f2418 0%, #1E1E1E 48%, #16120a 100%)'
-              : 'linear-gradient(120deg, #e8f3ec 0%, #ffffff 50%, #f7efd4 100%)',
-        }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#3DDC84', boxShadow: '0 0 12px #3DDC84' }} />
-              <Typography variant="caption" sx={{ letterSpacing: '0.18em', textTransform: 'uppercase', color: 'secondary.main', fontWeight: 700 }}>
-                Live operations
-              </Typography>
-            </Box>
-            <Typography variant="h4" fontWeight={800} sx={{ letterSpacing: '-0.04em' }}>
-              OCR command deck
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 560 }}>
-              A real-time snapshot of extraction throughput, storage pressure, and pipeline health.
-            </Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: 2, py: 1, borderRadius: 999, bgcolor: 'action.hover' }}>
-            <SparkIcon sx={{ color: 'secondary.main', fontSize: 18 }} />
-            <Typography variant="body2" fontWeight={700}>
-              {successRate}% extraction success
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>

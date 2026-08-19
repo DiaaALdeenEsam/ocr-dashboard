@@ -5,11 +5,8 @@ import {
   Avatar,
   Box,
   Button,
-  Card,
   CardContent,
-  CircularProgress,
   Grid,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -17,6 +14,7 @@ import {
   TableHead,
   TableRow,
   Typography,
+  useTheme,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -26,12 +24,21 @@ import {
   Edit as EditIcon,
   FolderOpen as FolderOpenIcon,
   PendingActions as PendingIcon,
-  Person as PersonIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { ApiError, getAdminUser } from '../api/client';
 import { formatFileSize } from '../utils/format';
 import { useAuth } from '../context/AuthContext';
+import {
+  AccessDeniedPanel,
+  EmptyPanel,
+  GlassPanel,
+  glowTableSx,
+  HeroChip,
+  KpiTile,
+  LoadingPanel,
+  PageHero,
+} from '../components/visual';
 
 function formatDate(value) {
   if (!value) return '—';
@@ -53,39 +60,10 @@ function displayTotalSize(user) {
   return '—';
 }
 
-function StatCard({ label, value, icon, accent }) {
-  const isSecondary = accent === 'secondary';
-  return (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              {label}
-            </Typography>
-            <Typography variant="h5" fontWeight={700}>
-              {value}
-            </Typography>
-          </Box>
-          <Box
-            sx={{
-              p: 1.5,
-              borderRadius: 2,
-              bgcolor: isSecondary ? 'secondary.light' : 'primary.light',
-              color: isSecondary ? 'secondary.contrastText' : 'primary.contrastText',
-            }}
-          >
-            {icon}
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-}
-
 export default function UserDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
   const { logout } = useAuth();
   const [user, setUser] = useState(null);
   const [error, setError] = useState('');
@@ -111,19 +89,7 @@ export default function UserDetail() {
   }, [id]);
 
   if (accessDenied) {
-    return (
-      <Box sx={{ textAlign: 'center', py: 8 }}>
-        <Typography variant="h5" fontWeight={700} gutterBottom>
-          Access Denied
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Your account is not authorized to view this page.
-        </Typography>
-        <Button variant="contained" color="primary" onClick={logout}>
-          Back to Login
-        </Button>
-      </Box>
-    );
+    return <AccessDeniedPanel onLogout={logout} />;
   }
 
   const name = user?.username || `User #${id}`;
@@ -134,125 +100,111 @@ export default function UserDetail() {
       <Button
         startIcon={<ArrowBackIcon />}
         onClick={() => navigate('/dashboard/users')}
-        sx={{ mb: 2, pl: 0 }}
+        sx={{ mb: 2, color: 'secondary.main' }}
       >
-        Back to Users
+        Back to operators
       </Button>
 
+      <PageHero
+        eyebrow="Profile dossier"
+        title={name}
+        subtitle={user?.email || 'Inspect storage, extraction outcomes, and edit history for this operator.'}
+        action={
+          <HeroChip>
+            Last upload {formatDate(user?.last_upload_at)}
+          </HeroChip>
+        }
+      />
+
       {error && (
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Alert
-            severity="error"
-            action={
-              <Button
-                color="inherit"
-                size="small"
-                startIcon={<RefreshIcon />}
-                onClick={() => window.location.reload()}
-              >
-                Retry
-              </Button>
-            }
-          >
-            {error}
-          </Alert>
-        </Paper>
+        <Alert
+          severity="error"
+          sx={{ mb: 3 }}
+          action={
+            <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
       )}
 
-      {user === null && !error && (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress color="secondary" />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Loading user details...
-          </Typography>
-        </Paper>
-      )}
+      {user === null && !error && <LoadingPanel label="Opening operator dossier..." />}
 
       {user !== null && (
         <>
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                <Avatar
-                  sx={{
-                    width: 56,
-                    height: 56,
-                    bgcolor: 'primary.main',
-                    fontSize: '1.2rem',
-                    fontWeight: 700,
-                  }}
-                >
-                  {name.slice(0, 2).toUpperCase()}
-                </Avatar>
-                <Box sx={{ flex: 1, minWidth: 200 }}>
-                  <Typography variant="h6" fontWeight={700}>
-                    {name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {user.email}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PersonIcon fontSize="small" color="action" />
-                  <Typography variant="body2" color="text.secondary">
-                    Last upload: {formatDate(user.last_upload_at)}
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
-          <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-              <StatCard
-                label="Storage Used"
+              <KpiTile
+                title="Archive"
                 value={displayTotalSize(user)}
-                icon={<StorageIcon />}
-                accent="primary"
+                hint="storage used by this operator"
+                icon={<StorageIcon fontSize="small" />}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-              <StatCard
-                label="Total Files"
+              <KpiTile
+                title="Captures"
                 value={user.total_files ?? 0}
-                icon={<DocsIcon />}
-                accent="secondary"
+                hint="source images uploaded"
+                icon={<DocsIcon fontSize="small" />}
+                accent="gold"
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-              <StatCard
-                label="Completed / Pending"
+              <KpiTile
+                title="Cleared"
                 value={`${user.total_completed ?? 0} / ${user.total_pending ?? 0}`}
-                icon={<CheckCircleIcon />}
-                accent="primary"
+                hint="completed / pending records"
+                icon={<CheckCircleIcon fontSize="small" />}
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
-              <StatCard
-                label="Edits (used / total)"
+              <KpiTile
+                title="Edits"
                 value={`${user.total_used_edits ?? 0} / ${user.total_edits ?? 0}`}
-                icon={<EditIcon />}
-                accent="secondary"
+                hint="used / total corrections"
+                icon={<EditIcon fontSize="small" />}
+                accent="gold"
               />
             </Grid>
           </Grid>
 
-          {files !== null ? (
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Uploaded Files
-                </Typography>
-                {files.length === 0 ? (
-                  <Box sx={{ textAlign: 'center', py: 4 }}>
-                    <FolderOpenIcon sx={{ fontSize: 48, color: 'action.disabled', mb: 1 }} />
-                    <Typography variant="body2" color="text.secondary">
-                      This user has not uploaded any files yet.
-                    </Typography>
-                  </Box>
+          <GlassPanel>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Avatar
+                  sx={{
+                    width: 52,
+                    height: 52,
+                    bgcolor: 'primary.light',
+                    fontWeight: 800,
+                    boxShadow: '0 0 18px rgba(61,220,132,0.28)',
+                  }}
+                >
+                  {name.slice(0, 2).toUpperCase()}
+                </Avatar>
+                <Box>
+                  <Typography variant="overline" sx={{ color: 'secondary.main', letterSpacing: '0.16em', fontWeight: 700 }}>
+                    Activity
+                  </Typography>
+                  <Typography variant="h6" fontWeight={800}>
+                    {files !== null ? 'Uploaded files' : 'Pipeline notes'}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {files !== null ? (
+                files.length === 0 ? (
+                  <EmptyPanel
+                    icon={<FolderOpenIcon sx={{ fontSize: 48 }} />}
+                    title="No uploads yet"
+                    subtitle="This user has not uploaded any files yet."
+                  />
                 ) : (
                   <TableContainer sx={{ overflowX: 'auto' }}>
-                    <Table>
+                    <Table sx={glowTableSx(theme)}>
                       <TableHead>
                         <TableRow>
                           <TableCell>File</TableCell>
@@ -264,7 +216,7 @@ export default function UserDetail() {
                         {files.map((file) => (
                           <TableRow key={file.id} hover>
                             <TableCell>
-                              <Typography variant="body2" fontWeight={500} noWrap title={file.name}>
+                              <Typography variant="body2" fontWeight={600} noWrap title={file.name}>
                                 {file.name}
                               </Typography>
                             </TableCell>
@@ -275,23 +227,19 @@ export default function UserDetail() {
                       </TableBody>
                     </Table>
                   </TableContainer>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent>
+                )
+              ) : (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PendingIcon fontSize="small" color="action" />
+                  <PendingIcon fontSize="small" sx={{ color: 'secondary.main' }} />
                   <Typography variant="body2" color="text.secondary">
                     {user.total_failed > 0
                       ? `${user.total_failed} failed upload${user.total_failed === 1 ? '' : 's'}`
                       : 'No failed uploads.'}
                   </Typography>
                 </Box>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </GlassPanel>
         </>
       )}
     </Box>

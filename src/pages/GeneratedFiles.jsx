@@ -11,7 +11,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Paper,
   Snackbar,
   Table,
   TableBody,
@@ -21,6 +20,7 @@ import {
   TablePagination,
   TableRow,
   Typography,
+  useTheme,
 } from '@mui/material';
 import {
   CloudQueue as StorageIcon,
@@ -42,6 +42,15 @@ import {
   resolveMediaUrl,
 } from '../api/client';
 import { formatFileSize } from '../utils/format';
+import {
+  EmptyPanel,
+  GlassPanel,
+  glowTableSx,
+  HeroChip,
+  LoadingPanel,
+  PageHero,
+  glassCard,
+} from '../components/visual';
 
 const WORD_BLUE = '#2B579A';
 const PAGE_SIZE = 20;
@@ -298,6 +307,7 @@ function statsFromFiles(files) {
 }
 
 function StorageOverview({ stats, loading, error, onRetry }) {
+  const theme = useTheme();
   const totalBytes = stats?.total_bytes ?? 0;
   const breakdown = useMemo(() => {
     const rows = Array.isArray(stats?.by_file_type) ? stats.by_file_type : [];
@@ -314,7 +324,7 @@ function StorageOverview({ stats, loading, error, onRetry }) {
   const heaviest = breakdown.find((item) => item.size > 0);
 
   return (
-    <Card sx={{ mb: 3 }}>
+    <Card sx={glassCard(theme, { mb: 3 })}>
       <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
         <Box
           sx={{
@@ -326,8 +336,11 @@ function StorageOverview({ stats, loading, error, onRetry }) {
           }}
         >
           <Box>
+            <Typography variant="overline" sx={{ color: 'secondary.main', letterSpacing: '0.16em', fontWeight: 700 }}>
+              Vault pressure
+            </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-              Total Used Storage
+              Total used storage
             </Typography>
             {loading && !stats ? (
               <CircularProgress size={28} color="secondary" sx={{ my: 1 }} />
@@ -444,6 +457,7 @@ function StorageOverview({ stats, loading, error, onRetry }) {
 }
 
 export default function GeneratedFiles() {
+  const theme = useTheme();
   const [files, setFiles] = useState([]);
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -543,28 +557,21 @@ export default function GeneratedFiles() {
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: { xs: 'column', sm: 'row' },
-          justifyContent: 'space-between',
-          alignItems: { xs: 'stretch', sm: 'center' },
-          gap: 2,
-          mb: 3,
-        }}
-      >
-        <Box>
-          <Typography variant="h5" fontWeight={700} gutterBottom>
-            Generated Files
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage and view files extracted from processed images.
-          </Typography>
-        </Box>
-        <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh} disabled={listLoading}>
-          Refresh
-        </Button>
-      </Box>
+      <PageHero
+        eyebrow="Exports"
+        title="Generated files"
+        subtitle="Structured PDF, JSON, Word, and Excel artifacts distilled from processed images."
+        action={
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+            <HeroChip icon={<GeneratedIcon sx={{ color: 'secondary.main', fontSize: 18 }} />}>
+              {displayStats?.total_files ?? files.length} exports
+            </HeroChip>
+            <Button variant="contained" color="primary" startIcon={<RefreshIcon />} onClick={handleRefresh} disabled={listLoading}>
+              Refresh
+            </Button>
+          </Box>
+        }
+      />
 
       <StorageOverview
         stats={displayStats}
@@ -574,50 +581,47 @@ export default function GeneratedFiles() {
       />
 
       {listError && (
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Alert
-            severity="error"
-            action={
-              <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={() => loadFiles(page)}>
-                Retry
-              </Button>
-            }
-          >
-            {listError}
-          </Alert>
-        </Paper>
+        <Alert
+          severity="error"
+          sx={{ mb: 3 }}
+          action={
+            <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={() => loadFiles(page)}>
+              Retry
+            </Button>
+          }
+        >
+          {listError}
+        </Alert>
       )}
 
       {listLoading && files.length === 0 && !listError && (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <CircularProgress color="secondary" />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Loading generated files...
-          </Typography>
-        </Paper>
+        <LoadingPanel label="Assembling generated exports..." />
       )}
 
       {!listLoading && files.length === 0 && !listError && (
-        <Paper sx={{ p: 6, textAlign: 'center' }}>
-          <GeneratedIcon sx={{ fontSize: 48, color: 'action.disabled', mb: 1 }} />
-          <Typography variant="h6" gutterBottom>
-            No generated files found.
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Exported PDF, JSON, Word, and Excel files will appear here.
-          </Typography>
-        </Paper>
+        <EmptyPanel
+          icon={<GeneratedIcon sx={{ fontSize: 48 }} />}
+          title="No generated files found."
+          subtitle="Exported PDF, JSON, Word, and Excel files will appear here."
+        />
       )}
 
       {files.length > 0 && (
-        <Paper>
+        <GlassPanel>
           {listLoading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
               <CircularProgress size={22} color="secondary" />
             </Box>
           )}
+          <CardContent>
+            <Typography variant="overline" sx={{ color: 'secondary.main', letterSpacing: '0.16em', fontWeight: 700 }}>
+              Distillery
+            </Typography>
+            <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>
+              Output library
+            </Typography>
           <TableContainer sx={{ overflowX: 'auto' }}>
-            <Table>
+            <Table sx={glowTableSx(theme)}>
               <TableHead>
                 <TableRow>
                   <TableCell>File Name</TableCell>
@@ -709,7 +713,8 @@ export default function GeneratedFiles() {
             rowsPerPage={PAGE_SIZE}
             rowsPerPageOptions={[PAGE_SIZE]}
           />
-        </Paper>
+          </CardContent>
+        </GlassPanel>
       )}
 
       <FileDetailsDialog
