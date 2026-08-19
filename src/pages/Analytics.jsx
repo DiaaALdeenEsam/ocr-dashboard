@@ -234,37 +234,41 @@ export default function Analytics() {
         ))}
       </Grid>
 
-      <Grid container spacing={3}>
-        <Grid size={{ xs: 12, lg: 8 }}>
-          <Card>
-            <CardContent>
+      <Grid container spacing={3} alignItems="stretch">
+        <Grid size={{ xs: 12, lg: 5 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Typography variant="h6" gutterBottom>
                 OCR Record Status
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Completed, pending, and failed OCR records
               </Typography>
-              <DonutChart segments={statusSegments} centerLabel={totalRecords ?? '—'} />
+              <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <DonutChart segments={statusSegments} centerLabel={totalRecords ?? '—'} />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid size={{ xs: 12, lg: 4 }}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <Card sx={{ height: '100%' }}>
-            <CardContent>
+            <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <Typography variant="h6" gutterBottom>
                 User Activity / Traffic
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Monthly active users over the past year
               </Typography>
-              <LineChart data={activityData} color={primaryColor} />
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-                {months.filter((_, i) => i % 3 === 0).map((m) => (
-                  <Typography key={m} variant="caption" color="text.secondary">
-                    {m}
-                  </Typography>
-                ))}
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <LineChart data={activityData} color={primaryColor} height={200} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+                  {months.filter((_, i) => i % 3 === 0).map((m) => (
+                    <Typography key={m} variant="caption" color="text.secondary">
+                      {m}
+                    </Typography>
+                  ))}
+                </Box>
               </Box>
             </CardContent>
           </Card>
